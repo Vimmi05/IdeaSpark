@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IdeaSpark — AI Business Idea Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #09000a;
+    --surface: #110013;
+    --border: #250828;
+    --accent: #b8111f;
+    --accent-h: #d4162a;
+    --accent-glow: rgba(184,17,31,0.28);
+    --accent-dim: rgba(184,17,31,0.08);
+    --accent-b: rgba(184,17,31,0.28);
+    --text: #f0ede8;
+    --muted: #7a687a;
+    --card: #110012;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(184,17,31,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(184,17,31,0.025) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:100;background:rgba(9,0,10,0.93);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:56px;}
+  .nav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;letter-spacing:-0.03em;}
+  .nav-logo span{color:var(--accent);}
+  .nav-tabs{display:flex;gap:4px;}
+  .nav-tab{background:transparent;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.07em;padding:7px 15px;border-radius:3px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+  .nav-tab:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+  .nav-tab.active{color:var(--accent);background:var(--accent-dim);}
+  .saved-count{display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:white;font-size:9px;width:16px;height:16px;border-radius:50%;margin-left:5px;font-weight:700;vertical-align:middle;}
+
+  /* PAGES */
+  .page{display:none;}
+  .page.active{display:block;}
+  .container{max-width:820px;margin:0 auto;padding:54px 22px 100px;position:relative;z-index:1;}
+
+  /* HEADER */
+  .header{margin-bottom:48px;animation:fadeDown 0.7s ease both;}
+  .badge{display:inline-flex;align-items:center;gap:6px;background:var(--accent-dim);border:1px solid var(--accent-b);color:var(--accent);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;padding:5px 12px;border-radius:2px;margin-bottom:18px;}
+  .badge::before{content:'';width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
+  h1{font-family:'Syne',sans-serif;font-size:clamp(38px,7vw,66px);font-weight:800;line-height:1;letter-spacing:-0.03em;margin-bottom:12px;}
+  h1 span{color:var(--accent);}
+  .subtitle{color:var(--muted);font-size:13px;line-height:1.7;max-width:480px;}
+
+  /* STATS */
+  .stats-bar{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:36px;overflow:hidden;animation:fadeUp 0.7s 0.2s ease both;}
+  .stat{flex:1;padding:16px 18px;border-right:1px solid var(--border);text-align:center;}
+  .stat:last-child{border-right:none;}
+  .stat-value{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--accent);}
+  .stat-label{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+
+  /* FORM */
+  .form-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:30px;margin-bottom:30px;animation:fadeUp 0.7s 0.1s ease both;}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  .form-group{display:flex;flex-direction:column;gap:7px;}
+  .form-group.full{grid-column:1/-1;}
+  label{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);}
+  select,input{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:10px 13px;border-radius:3px;outline:none;transition:border-color 0.2s;-webkit-appearance:none;}
+  select:focus,input:focus{border-color:var(--accent);}
+  select option{background:#1a0020;}
+
+  .generate-btn{width:100%;margin-top:6px;background:var(--accent);color:#fff;border:none;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.05em;text-transform:uppercase;padding:15px;border-radius:3px;cursor:pointer;transition:all 0.2s;}
+  .generate-btn:hover{background:var(--accent-h);transform:translateY(-1px);box-shadow:0 8px 30px var(--accent-glow);}
+  .generate-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none;box-shadow:none;}
+  .btn-inner{display:flex;align-items:center;justify-content:center;gap:8px;}
+
+  /* LOADER */
+  .loader{display:none;align-items:center;gap:12px;padding:26px 30px;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:22px;color:var(--muted);font-size:13px;}
+  .loader.visible{display:flex;}
+  .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
+
+  /* RESULT */
+  .result{display:none;animation:fadeUp 0.5s ease both;}
+  .result.visible{display:block;}
+  .result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .result-label{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);}
+  .regen-btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;padding:6px 12px;border-radius:2px;cursor:pointer;transition:all 0.2s;}
+  .regen-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* IDEA CARD */
+  .idea-card{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:26px 26px 20px;margin-bottom:14px;position:relative;transition:border-color 0.2s,transform 0.2s,background 0.2s;animation:fadeUp 0.4s ease both;}
+  .idea-card:hover{border-color:var(--accent-b);transform:translateY(-2px);background:rgba(184,17,31,0.04);}
+  .idea-card:nth-child(2){animation-delay:0.08s;}
+  .idea-card:nth-child(3){animation-delay:0.16s;}
+  .idea-card.is-saved{border-color:rgba(184,17,31,0.25);}
+  .idea-number{position:absolute;top:18px;right:22px;font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:rgba(184,17,31,0.07);line-height:1;pointer-events:none;}
+  .idea-name{font-family:'Syne',sans-serif;font-size:19px;font-weight:700;margin-bottom:7px;line-height:1.3;padding-right:50px;}
+  .idea-tagline{color:var(--accent);font-size:12px;margin-bottom:12px;letter-spacing:0.02em;}
+  .idea-desc{color:#b09aaa;font-size:13px;line-height:1.8;margin-bottom:18px;}
+  .idea-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .idea-meta{display:flex;gap:7px;flex-wrap:wrap;}
+  .tag{font-size:10px;letter-spacing:0.07em;text-transform:uppercase;padding:4px 9px;border-radius:2px;}
+  .tag-green{background:rgba(52,211,153,0.1);color:#34d399;border:1px solid rgba(52,211,153,0.2);}
+  .tag-red{background:rgba(184,17,31,0.1);color:#e05060;border:1px solid rgba(184,17,31,0.22);}
+  .tag-blue{background:rgba(96,165,250,0.1);color:#60a5fa;border:1px solid rgba(96,165,250,0.2);}
+  .tag-dim{background:rgba(120,100,120,0.12);color:var(--muted);border:1px solid rgba(120,100,120,0.2);}
+
+  /* CARD ACTIONS */
+  .card-actions{display:flex;gap:7px;flex-shrink:0;}
+  .action-btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;padding:6px 11px;border-radius:2px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+  .action-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .action-btn.is-saved{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);pointer-events:none;}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--surface);border:1px solid var(--accent-b);color:var(--text);font-size:13px;padding:11px 20px;border-radius:3px;z-index:999;opacity:0;transition:all 0.3s;pointer-events:none;white-space:nowrap;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:30px;max-width:480px;width:100%;animation:fadeUp 0.3s ease both;}
+  .modal-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:5px;}
+  .modal-sub{color:var(--muted);font-size:12px;margin-bottom:22px;}
+  .share-name{color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:20px;padding:12px 15px;background:var(--accent-dim);border:1px solid var(--accent-b);border-radius:3px;}
+  .share-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px;}
+  .share-opt{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:13px;border-radius:3px;cursor:pointer;transition:all 0.2s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .share-opt:hover{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);}
+  .share-opt .ico{font-size:18px;}
+  .copy-row{display:flex;gap:7px;}
+  .copy-input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;padding:9px 11px;border-radius:3px;outline:none;}
+  .copy-btn{background:var(--accent);border:none;color:white;font-family:'DM Mono',monospace;font-size:11px;padding:9px 14px;border-radius:3px;cursor:pointer;transition:background 0.2s;white-space:nowrap;}
+  .copy-btn:hover{background:var(--accent-h);}
+  .modal-close{display:block;width:100%;margin-top:14px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;padding:9px;border-radius:3px;cursor:pointer;transition:all 0.2s;}
+  .modal-close:hover{border-color:var(--muted);color:var(--text);}
+
+  /* SAVED PAGE */
+  .saved-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;}
+  .saved-title{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;letter-spacing:-0.02em;}
+  .saved-title span{color:var(--accent);}
+  .clear-btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;padding:7px 13px;border-radius:2px;cursor:pointer;transition:all 0.2s;}
+  .clear-btn:hover{border-color:#e05060;color:#e05060;}
+  .empty-state{text-align:center;padding:80px 20px;color:var(--muted);}
+  .empty-icon{font-size:44px;margin-bottom:14px;opacity:0.4;}
+  .empty-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text);opacity:0.45;}
+  .empty-text{font-size:13px;line-height:1.7;}
+
+  /* ERROR */
+  .error-box{display:none;background:rgba(184,17,31,0.06);border:1px solid rgba(184,17,31,0.3);color:#e05060;font-size:13px;padding:14px 18px;border-radius:3px;margin-bottom:18px;}
+  .error-box.visible{display:block;}
+
+  @keyframes fadeDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+  @media(max-width:560px){
+    .form-row{grid-template-columns:1fr;}
+    .form-card{padding:18px;}
+    .stats-bar{flex-direction:column;}
+    .stat{border-right:none;border-bottom:1px solid var(--border);}
+    .stat:last-child{border-bottom:none;}
+    .share-grid{grid-template-columns:1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Idea<span>Spark</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-generate" onclick="switchPage('generate',this)">⚡ Generate</button>
+    <button class="nav-tab" id="tab-saved" onclick="switchPage('saved',this)">
+      🔖 Saved<span class="saved-count" id="savedCount" style="display:none">0</span>
+    </button>
+  </div>
+</nav>
+
+<!-- GENERATE PAGE -->
+<div class="page active" id="page-generate">
+  <div class="container">
+    <div class="header">
+      <div class="badge">AI-Powered</div>
+      <h1>Idea<span>Spark</span></h1>
+      <p class="subtitle">Describe your profile and get 3 tailored business ideas generated by AI — instantly.</p>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-value" id="statGenerated">0</div><div class="stat-label">Ideas Generated</div></div>
+      <div class="stat"><div class="stat-value" id="statSaved">0</div><div class="stat-label">Ideas Saved</div></div>
+      <div class="stat"><div class="stat-value" id="statShared">0</div><div class="stat-label">Times Shared</div></div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Your Skills / Background</label>
+          <input type="text" id="skills" placeholder="e.g. cooking, coding, writing" />
+        </div>
+        <div class="form-group">
+          <label>Available Budget</label>
+          <select id="budget">
+            <option value="$0 - no budget">$0 — No budget</option>
+            <option value="under $500">Under $500</option>
+            <option value="$500 - $2,000" selected>$500 – $2,000</option>
+            <option value="$2,000 - $10,000">$2,000 – $10,000</option>
+            <option value="$10,000+">$10,000+</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Target Market</label>
+          <select id="market">
+            <option value="local community">Local Community</option>
+            <option value="online / global" selected>Online / Global</option>
+            <option value="businesses (B2B)">Businesses (B2B)</option>
+            <option value="teens & students">Teens & Students</option>
+            <option value="parents & families">Parents & Families</option>
+            <option value="professionals">Professionals</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Business Type</label>
+          <select id="type">
+            <option value="any type">Any Type</option>
+            <option value="app or software">App / Software</option>
+            <option value="physical product">Physical Product</option>
+            <option value="service business">Service Business</option>
+            <option value="content / creator">Content / Creator</option>
+            <option value="marketplace">Marketplace</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Interests / Passions (optional)</label>
+          <input type="text" id="interests" placeholder="e.g. fitness, travel, pets, sustainability..." />
+        </div>
+      </div>
+      <button class="generate-btn" id="generateBtn" onclick="generateIdeas()">
+        <div class="btn-inner"><span>⚡</span><span>Generate Business Ideas</span></div>
+      </button>
+    </div>
+
+    <div class="loader" id="loader"><div class="spinner"></div><span>AI is cooking up your ideas...</span></div>
+    <div class="error-box" id="errorBox"></div>
+
+    <div class="result" id="result">
+      <div class="result-header">
+        <div class="result-label">✦ Your Ideas</div>
+        <button class="regen-btn" onclick="generateIdeas()">↻ Regenerate</button>
+      </div>
+      <div id="ideasContainer"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SAVED PAGE -->
+<div class="page" id="page-saved">
+  <div class="container">
+    <div class="saved-hdr">
+      <div class="saved-title">Saved <span>Ideas</span></div>
+      <button class="clear-btn" onclick="clearAll()">✕ Clear All</button>
+    </div>
+    <div id="savedContainer"></div>
+  </div>
+</div>
+
+<!-- SHARE MODAL -->
+<div class="modal-overlay" id="shareModal">
+  <div class="modal">
+    <div class="modal-title">Share This Idea</div>
+    <div class="modal-sub">Let others discover this opportunity</div>
+    <div class="share-name" id="shareName"></div>
+    <div class="share-grid">
+      <button class="share-opt" onclick="shareVia('twitter')"><span class="ico">𝕏</span><span>Twitter / X</span></button>
+      <button class="share-opt" onclick="shareVia('whatsapp')"><span class="ico">💬</span><span>WhatsApp</span></button>
+      <button class="share-opt" onclick="shareVia('linkedin')"><span class="ico">in</span><span>LinkedIn</span></button>
+      <button class="share-opt" onclick="shareVia('email')"><span class="ico">✉️</span><span>Email</span></button>
+    </div>
+    <div class="copy-row">
+      <input class="copy-input" id="copyInput" readonly />
+      <button class="copy-btn" onclick="copyLink()">Copy</button>
+    </div>
+    <button class="modal-close" onclick="closeModal()">✕ Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let saved = JSON.parse(localStorage.getItem('is_saved')||'[]');
+let stats = JSON.parse(localStorage.getItem('is_stats')||'{"g":0,"s":0}');
+let shareTarget = null;
+const ideaStore = {};
+
+function persist(){
+  localStorage.setItem('is_saved', JSON.stringify(saved));
+  localStorage.setItem('is_stats', JSON.stringify(stats));
+}
+
+function updateUI(){
+  const n = saved.length;
+  document.getElementById('savedCount').textContent = n;
+  document.getElementById('savedCount').style.display = n > 0 ? 'inline-flex' : 'none';
+  document.getElementById('statGenerated').textContent = stats.g;
+  document.getElementById('statSaved').textContent = n;
+  document.getElementById('statShared').textContent = stats.s;
+}
+updateUI();
+
+// Restore saved ideas into ideaStore on load
+saved.forEach(idea => { ideaStore[idea.id] = idea; });
+
+function switchPage(pg, el){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + pg).classList.add('active');
+  el.classList.add('active');
+  if(pg === 'saved') renderSaved();
+}
+
+async function generateIdeas(){
+  const skills   = document.getElementById('skills').value || 'general skills';
+  const budget   = document.getElementById('budget').value;
+  const market   = document.getElementById('market').value;
+  const type     = document.getElementById('type').value;
+  const interests= document.getElementById('interests').value || 'none';
+
+  const btn    = document.getElementById('generateBtn');
+  const loader = document.getElementById('loader');
+  const result = document.getElementById('result');
+  const errBox = document.getElementById('errorBox');
+
+  btn.disabled = true;
+  loader.classList.add('visible');
+  result.classList.remove('visible');
+  errBox.classList.remove('visible');
+  document.getElementById('ideasContainer').innerHTML = '';
+
+  const prompt = `You are a startup expert. Generate exactly 3 unique, realistic business ideas for:
+- Skills: ${skills}
+- Budget: ${budget}
+- Market: ${market}
+- Type: ${type}
+- Interests: ${interests}
+Return ONLY a raw JSON array of 3 objects with fields: name, tagline, description, difficulty (Easy/Medium/Hard), timeToRevenue, profitPotential (Low/Medium/High/Very High), startupCost. No markdown.`;
+
+  try {
+    const res  = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{role:"user", content: prompt}]
+      })
+    });
+    const data  = await res.json();
+    const text  = data.content?.[0]?.text || '';
+    const ideas = JSON.parse(text.replace(/```json|```/g,'').trim());
+
+    ideas.forEach(idea => {
+      idea.id = 'idea_' + Date.now() + '_' + Math.floor(Math.random()*100000);
+      ideaStore[idea.id] = idea;
+    });
+
+    stats.g += ideas.length;
+    persist();
+    updateUI();
+    renderCards(ideas, 'ideasContainer', true);
+    result.classList.add('visible');
+  } catch(e) {
+    errBox.textContent = '⚠ Something went wrong. Please try again.';
+    errBox.classList.add('visible');
+  } finally {
+    btn.disabled = false;
+    loader.classList.remove('visible');
+  }
+}
+
+function isSaved(id){ return saved.some(s => s.id === id); }
+function diffTag(d){ return {Easy:'tag-green', Medium:'tag-dim', Hard:'tag-red'}[d] || 'tag-dim'; }
+function profitTag(p){ return {Low:'tag-blue', Medium:'tag-dim', High:'tag-green', 'Very High':'tag-green'}[p] || 'tag-dim'; }
+
+function renderCards(ideas, cid, nums){
+  document.getElementById(cid).innerHTML = ideas.map((idea, i) => {
+    const sv = isSaved(idea.id);
+    return `<div class="idea-card${sv?' is-saved':''}" id="card-${idea.id}">
+      ${nums ? `<div class="idea-number">${String(i+1).padStart(2,'0')}</div>` : ''}
+      <div class="idea-name">${idea.name}</div>
+      <div class="idea-tagline">${idea.tagline}</div>
+      <div class="idea-desc">${idea.description}</div>
+      <div class="idea-footer">
+        <div class="idea-meta">
+          <span class="tag ${diffTag(idea.difficulty)}">⚡ ${idea.difficulty}</span>
+          <span class="tag tag-blue">⏱ ${idea.timeToRevenue}</span>
+          <span class="tag ${profitTag(idea.profitPotential)}">💰 ${idea.profitPotential}</span>
+          <span class="tag tag-red">🚀 ${idea.startupCost}</span>
+        </div>
+        <div class="card-actions">
+          <button class="action-btn${sv?' is-saved':''}" id="sbtn-${idea.id}" data-id="${idea.id}" onclick="toggleSave(this.dataset.id)">
+            ${sv ? '🔖 Saved' : '+ Save'}
+          </button>
+          <button class="action-btn" data-id="${idea.id}" onclick="openShare(this.dataset.id)">↗ Share</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSave(id){
+  const idea = ideaStore[id];
+  if(!idea){ showToast('Error: idea not found.'); return; }
+
+  const btn  = document.getElementById('sbtn-' + id);
+  const card = document.getElementById('card-' + id);
+  const idx  = saved.findIndex(s => s.id === id);
+
+  if(idx === -1){
+    saved.push(idea);
+    if(btn){ btn.textContent = '🔖 Saved'; btn.classList.add('is-saved'); }
+    if(card) card.classList.add('is-saved');
+    showToast('🔖 Idea saved!');
+  } else {
+    saved.splice(idx, 1);
+    if(btn){ btn.textContent = '+ Save'; btn.classList.remove('is-saved'); }
+    if(card) card.classList.remove('is-saved');
+    showToast('Removed from saved.');
+  }
+  persist();
+  updateUI();
+}
+
+function renderSaved(){
+  const c = document.getElementById('savedContainer');
+  if(!saved.length){
+    c.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🔖</div>
+      <div class="empty-title">No saved ideas yet</div>
+      <div class="empty-text">Generate ideas and tap "+ Save" to bookmark them here.</div>
+    </div>`;
+    return;
+  }
+  renderCards(saved, 'savedContainer', false);
+}
+
+function clearAll(){
+  if(!saved.length) return;
+  saved = [];
+  persist();
+  updateUI();
+  renderSaved();
+  showToast('All saved ideas cleared.');
+}
+
+function openShare(id){
+  const idea = ideaStore[id];
+  if(!idea){ showToast('Error: idea not found.'); return; }
+  shareTarget = idea;
+  document.getElementById('shareName').textContent = idea.name + ' — ' + idea.tagline;
+  document.getElementById('copyInput').value = `💡 "${idea.name}" — ${idea.tagline}\n\nDifficulty: ${idea.difficulty} | Revenue: ${idea.timeToRevenue} | Profit: ${idea.profitPotential}\n\nVia IdeaSpark AI`;
+  document.getElementById('shareModal').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('shareModal').classList.remove('open');
+  shareTarget = null;
+}
+
+function shareVia(p){
+  if(!shareTarget) return;
+  const t = encodeURIComponent(`💡 Business Idea: "${shareTarget.name}" — ${shareTarget.tagline}\nDifficulty: ${shareTarget.difficulty} | Revenue in: ${shareTarget.timeToRevenue}\nGenerated by IdeaSpark AI`);
+  const urls = {
+    twitter:  `https://twitter.com/intent/tweet?text=${t}`,
+    whatsapp: `https://wa.me/?text=${t}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=https://ideaspark.ai&summary=${t}`,
+    email:    `mailto:?subject=${encodeURIComponent('Business Idea: ' + shareTarget.name)}&body=${t}`
+  };
+  window.open(urls[p], '_blank');
+  stats.s++;
+  persist();
+  updateUI();
+  closeModal();
+  showToast('Shared via ' + p.charAt(0).toUpperCase() + p.slice(1) + '!');
+}
+
+function copyLink(){
+  const v = document.getElementById('copyInput').value;
+  navigator.clipboard.writeText(v)
+    .then(() => showToast('📋 Copied to clipboard!'))
+    .catch(() => {
+      document.getElementById('copyInput').select();
+      document.execCommand('copy');
+      showToast('📋 Copied!');
+    });
+  stats.s++;
+  persist();
+  updateUI();
+}
+
+let toastT;
+function showToast(m){
+  const t = document.getElementById('toast');
+  t.textContent = m;
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+document.getElementById('shareModal').addEventListener('click', e => {
+  if(e.target === document.getElementById('shareModal')) closeModal();
+});
+</script>
+</body>
+</html>
